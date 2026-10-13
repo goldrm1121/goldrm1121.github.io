@@ -149,18 +149,18 @@ export async function createScene(canvas, { onProgress = () => {}, reducedMotion
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2(9, 9);
   const parallax = new THREE.Vector2();
-  let hovered = -1, prevHovered = -1, scrollY = 0, startTime = null, lastT = null, running = true;
+  let hovered = -1, prevHovered = -1, clickShot = false, scrollY = 0, startTime = null, lastT = null, running = true;
 
   window.addEventListener("pointermove", e => {
     pointer.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     parallax.set(pointer.x, pointer.y);
   });
   window.addEventListener("pointerleave", () => pointer.set(9, 9));
-  // Touch: a tap on the skyline launches fireworks too
+  // Click / tap on the skyline (not on links or buttons) launches a firework there
   window.addEventListener("pointerdown", e => {
-    if (e.pointerType === "mouse") return;
+    if (e.target.closest("a, button, .panel, .nav")) return;
     pointer.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
-    prevHovered = -1;
+    clickShot = true;
   });
   window.addEventListener("scroll", () => { scrollY = window.scrollY; }, { passive: true });
 
@@ -188,13 +188,14 @@ export async function createScene(canvas, { onProgress = () => {}, reducedMotion
     hovered = hit ? hit.instanceId : -1;
 
     // New tower under the cursor → launch a firework from its roof (cooldown per tower)
-    if (hovered !== -1 && hovered !== prevHovered && !reducedMotion) {
+    if (hovered !== -1 && (hovered !== prevHovered || clickShot)) {
       const s = state[hovered];
-      if (time - (lastShot.get(hovered) ?? -9) > 1.2 && pending.length < 6) {
+      if ((clickShot || time - (lastShot.get(hovered) ?? -9) > 1.2) && pending.length < 8) {
         launch(s.px, s.h + 1.2, s.pz);
         lastShot.set(hovered, time);
       }
     }
+    clickShot = false;
     prevHovered = hovered;
     updateFireworks(dt);
 
@@ -229,8 +230,19 @@ export async function createScene(canvas, { onProgress = () => {}, reducedMotion
     requestAnimationFrame(frame);
   }
 
+  // Opening show: a few rockets from the tallest towers once the city has risen
+  function celebrate(count = 4) {
+    const tallest = state.map((s, i) => [s.h, i]).sort((a, b) => b[0] - a[0]).slice(0, 12);
+    for (let k = 0; k < count; k++) {
+      setTimeout(() => {
+        const s = state[tallest[Math.floor(Math.random() * tallest.length)][1]];
+        launch(s.px, s.h + 1.2, s.pz);
+      }, 1400 + k * 450);
+    }
+  }
+
   return {
-    start() { requestAnimationFrame(frame); },
+    start() { requestAnimationFrame(frame); if (!reducedMotion) celebrate(); },
     stop() { running = false; },
   };
 }

@@ -1,3 +1,8 @@
 #!/usr/bin/env bash
-# Block commits where English and Chinese content are out of sync.
-python3 "$(git rev-parse --show-toplevel)/scripts/check-i18n.py" || { echo "pre-commit: update both EN (index.html) and ZH (assets/i18n.js)"; exit 1; }
+# 1) Block commits where English and Chinese content are out of sync.
+# 2) Stamp a new asset version so visitors never get stale cached JS/CSS.
+root="$(git rev-parse --show-toplevel)"
+python3 "$root/scripts/check-i18n.py" || { echo "pre-commit: update both EN (index.html) and ZH (assets/i18n.js)"; exit 1; }
+if git diff --cached --name-only | grep -qE '^(index\.html|assets/)'; then
+  "$root/scripts/bump-version.sh" >/dev/null && git add "$root/index.html" "$root/assets/main.js"
+fi

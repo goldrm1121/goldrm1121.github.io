@@ -1,4 +1,4 @@
-import { zh } from "./i18n.js";
+import { zh } from "./i18n.js?v=20261013112016";
 
 const $ = s => document.querySelector(s);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -82,7 +82,7 @@ function finishLoader() {
 
   setStep("engine", 0.1, "loader.engine");
   try {
-    const { createScene } = await import("./scene.js");
+    const { createScene } = await import("./scene.js?v=20261013112016");
     setStep("engine", 1, "loader.city");
     scene = await createScene($("#scene"), {
       reducedMotion,
