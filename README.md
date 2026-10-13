@@ -10,3 +10,7 @@ Hollis Li 的個人網站：雙語（EN / 中文）、three.js 互動天際線�
 
 本機預覽：`python3 -m http.server` 後開 http://localhost:8000 （`?enter` 跳過進入畫面，`?lang=zh` 指定語言）
 內容需與 ~/Awesome-Sara/content-*.tex 同步，只放已查證的事實。
+
+## 中英文同步規則
+任何內容修改都必須**同時**改英文（`index.html`）與中文（`assets/i18n.js`）。
+`scripts/check-i18n.py` 會檢查兩邊 key 是否一致；pre-commit hook（`git config core.hooksPath .githooks`）與 GitHub Actions 都會執行，不一致就擋下。

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Block commits where English and Chinese content are out of sync.
+python3 "$(git rev-parse --show-toplevel)/scripts/check-i18n.py" || { echo "pre-commit: update both EN (index.html) and ZH (assets/i18n.js)"; exit 1; }
