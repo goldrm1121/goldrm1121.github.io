@@ -1,10 +1,15 @@
 // Interactive skyline: an instanced grid of towers that rise on load, follow the cursor
 // and light up in the accent colour when hovered. Calls onProgress(0..1) while building.
+// `landmarks` towers (rank 1 = tallest) carry a pulsing beacon; while one is hovered,
+// onLandmark(rank, screenX, screenY) is called every frame (rank -1 when none).
 import * as THREE from "three";
 
 const NAVY = 0x041c2c, TOWER = 0x0d3a57, TOP = 0x1d6a8f, ACCENT = 0xdefe47;
 
-export async function createScene(canvas, { onProgress = () => {}, reducedMotion = false } = {}) {
+export async function createScene(canvas, {
+  onProgress = () => {}, reducedMotion = false,
+  landmarks = 0, onLandmark = () => {}, onLandmarkClick = () => {},
+} = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(NAVY);
@@ -51,12 +56,39 @@ export async function createScene(canvas, { onProgress = () => {}, reducedMotion
 
   const base = new THREE.Color(TOWER), tall = new THREE.Color(TOP), accent = new THREE.Color(ACCENT);
   const dummy = new THREE.Object3D();
-  const state = towers.map(t => ({ ...t, grow: reducedMotion ? 1 : 0, lift: 0, glow: 0 }));
+  const state = towers.map(t => ({ ...t, grow: reducedMotion ? 1 : 0, lift: 0, glow: 0, rank: -1 }));
+
+  // ---------- Landmarks ----------
+  // Pick well-separated tall towers (farthest-point sampling among the top third by height),
+  // then order them so rank 1 is the tallest. Rank 1 is boosted to stand clearly above all.
+  const lmIdx = [];
+  if (landmarks > 0) {
+    const byH = state.map((s, i) => i).sort((a, b) => state[b].h - state[a].h);
+    const pool = byH.slice(0, Math.max(landmarks * 4, Math.floor(state.length / 3)));
+    lmIdx.push(byH[0]);
+    while (lmIdx.length < landmarks && lmIdx.length < pool.length) {
+      let best = -1, bestD = -1;
+      for (const i of pool) {
+        if (lmIdx.includes(i)) continue;
+        const d = Math.min(...lmIdx.map(j => Math.hypot(state[i].px - state[j].px, state[i].pz - state[j].pz)));
+        const score = d * (0.6 + state[i].h / state[byH[0]].h); // prefer far apart AND tall
+        if (score > bestD) { bestD = score; best = i; }
+      }
+      lmIdx.push(best);
+    }
+    lmIdx.sort((a, b) => state[b].h - state[a].h);
+    state[lmIdx[0]].h *= 1.06;
+    lmIdx.forEach((i, r) => { state[i].rank = r; });
+  }
 
   // Build in chunks so the loader can report real progress
   const chunk = 60;
+  const baseColors = state.map(s => {
+    const c = base.clone().lerp(tall, Math.min(1, s.h / 14));
+    return s.rank >= 0 ? c.lerp(accent, 0.22) : c;   // landmarks carry a hint of the accent
+  });
   for (let i = 0; i < state.length; i++) {
-    mesh.setColorAt(i, base.clone().lerp(tall, Math.min(1, state[i].h / 14)));
+    mesh.setColorAt(i, baseColors[i]);
     if (i % chunk === 0) { onProgress(i / state.length); await new Promise(r => setTimeout(r, 0)); }
   }
   onProgress(1);
@@ -146,10 +178,23 @@ export async function createScene(canvas, { onProgress = () => {}, reducedMotion
   }
   const lastShot = new Map(); // tower index -> time of last launch (per-tower cooldown)
 
+  // Beacons: one pulsing point above each landmark roof
+  const bcPos = new Float32Array(lmIdx.length * 3);
+  const bcGeo = new THREE.BufferGeometry();
+  bcGeo.setAttribute("position", new THREE.BufferAttribute(bcPos, 3).setUsage(THREE.DynamicDrawUsage));
+  const bcMat = new THREE.PointsMaterial({
+    size: 1.6, map: sprite, color: ACCENT, transparent: true,
+    depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
+  });
+  const beacons = new THREE.Points(bcGeo, bcMat);
+  beacons.frustumCulled = false;
+  scene.add(beacons);
+  const roof = new THREE.Vector3();
+
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2(9, 9);
   const parallax = new THREE.Vector2();
-  let hovered = -1, prevHovered = -1, clickShot = false, scrollY = 0, startTime = null, lastT = null, running = true;
+  let hovered = -1, prevHovered = -1, clickShot = false, clickType = "mouse", scrollY = 0, startTime = null, lastT = null, running = true;
 
   window.addEventListener("pointermove", e => {
     pointer.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
@@ -161,6 +206,7 @@ export async function createScene(canvas, { onProgress = () => {}, reducedMotion
     if (e.target.closest("a, button, .panel, .nav")) return;
     pointer.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     clickShot = true;
+    clickType = e.pointerType;
   });
   window.addEventListener("scroll", () => { scrollY = window.scrollY; }, { passive: true });
 
@@ -184,17 +230,21 @@ export async function createScene(canvas, { onProgress = () => {}, reducedMotion
     lastT = t;
 
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObject(mesh)[0];
-    hovered = hit ? hit.instanceId : -1;
+    // Landmarks win even when a nearer tower occludes them, so every one stays discoverable
+    const hits = raycaster.intersectObject(mesh);
+    const lmHit = hits.find(h => state[h.instanceId].rank >= 0);
+    hovered = lmHit ? lmHit.instanceId : hits.length ? hits[0].instanceId : -1;
 
-    // New tower under the cursor → launch a firework from its roof (cooldown per tower)
-    if (hovered !== -1 && (hovered !== prevHovered || clickShot)) {
+    // Only landmark towers launch fireworks — they are the reward for finding one
+    if (hovered !== -1 && state[hovered].rank >= 0 && (hovered !== prevHovered || clickShot)) {
       const s = state[hovered];
-      if ((clickShot || time - (lastShot.get(hovered) ?? -9) > 1.2) && pending.length < 8) {
+      if ((clickShot || time - (lastShot.get(hovered) ?? -9) > 1.2) && pending.length < 14) {
         launch(s.px, s.h + 1.2, s.pz);
         lastShot.set(hovered, time);
       }
     }
+    const lmRank = hovered !== -1 ? state[hovered].rank : -1;
+    if (clickShot && lmRank >= 0) onLandmarkClick(lmRank, clickType);
     clickShot = false;
     prevHovered = hovered;
     updateFireworks(dt);
@@ -211,12 +261,20 @@ export async function createScene(canvas, { onProgress = () => {}, reducedMotion
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
       if (s.glow > 0.01 || target) {
-        col.copy(base).lerp(tall, Math.min(1, s.h / 14)).lerp(accent, s.glow);
+        col.copy(baseColors[i]).lerp(accent, s.glow);
         mesh.setColorAt(i, col);
       }
     }
     mesh.instanceMatrix.needsUpdate = true;
     mesh.instanceColor.needsUpdate = true;
+
+    // Beacons follow the (growing / lifting) roofs and breathe
+    lmIdx.forEach((i, r) => {
+      const s = state[i], h = s.h * (1 - Math.pow(1 - s.grow, 3)) + s.lift;
+      bcPos.set([s.px, h + 0.7, s.pz], r * 3);
+    });
+    bcGeo.attributes.position.needsUpdate = true;
+    bcMat.size = 1.6 * (reducedMotion ? 1 : 0.8 + 0.35 * Math.sin(time * 3));
 
     // Camera: slow orbit + cursor parallax + descend while scrolling
     const orbit = reducedMotion ? 0 : time * 0.04;
@@ -224,24 +282,34 @@ export async function createScene(canvas, { onProgress = () => {}, reducedMotion
     const a = Math.atan2(camBase.z, camBase.x) + orbit + parallax.x * 0.12;
     const sy = Math.min(scrollY / innerHeight, 3);
     camera.position.set(Math.cos(a) * r, camBase.y + parallax.y * 2 - sy * 4, Math.sin(a) * r);
-    camera.lookAt(0, sy * 1.5, 0);
+    camera.lookAt(0, 3 + sy * 1.5, 0); // aim a little above ground so the tallest roof stays in frame
 
     renderer.render(scene, camera);
+
+    // Report the hovered landmark's roof position in screen pixels (after camera update)
+    if (lmRank >= 0) {
+      const s = state[hovered];
+      roof.set(s.px, s.h + s.lift + 0.7, s.pz).project(camera);
+      onLandmark(lmRank, (roof.x + 1) / 2 * innerWidth, (1 - roof.y) / 2 * innerHeight);
+    } else {
+      onLandmark(-1);
+    }
     requestAnimationFrame(frame);
   }
 
-  // Opening show: a few rockets from the tallest towers once the city has risen
+  // Firework show from the landmark towers (opening show, and the finale when all are found)
   function celebrate(count = 4) {
-    const tallest = state.map((s, i) => [s.h, i]).sort((a, b) => b[0] - a[0]).slice(0, 12);
+    const from = lmIdx.length ? lmIdx : state.map((s, i) => i).sort((a, b) => state[b].h - state[a].h).slice(0, 7);
     for (let k = 0; k < count; k++) {
       setTimeout(() => {
-        const s = state[tallest[Math.floor(Math.random() * tallest.length)][1]];
+        const s = state[from[k % from.length]];
         launch(s.px, s.h + 1.2, s.pz);
-      }, 1400 + k * 450);
+      }, 1400 + k * 380);
     }
   }
 
   return {
+    celebrate,
     start() { requestAnimationFrame(frame); if (!reducedMotion) celebrate(); },
     stop() { running = false; },
   };

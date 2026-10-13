@@ -1,4 +1,4 @@
-import { zh } from "./i18n.js?v=20261013112140";
+import { zh } from "./i18n.js?v=20261013202304";
 
 const $ = s => document.querySelector(s);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -82,11 +82,14 @@ function finishLoader() {
 
   setStep("engine", 0.1, "loader.engine");
   try {
-    const { createScene } = await import("./scene.js?v=20261013112140");
+    const { createScene } = await import("./scene.js?v=20261013202304");
     setStep("engine", 1, "loader.city");
     scene = await createScene($("#scene"), {
       reducedMotion,
       onProgress: f => setStep("city", f),
+      landmarks: LANDMARKS.length,
+      onLandmark: showLandmark,
+      onLandmarkClick: clickLandmark,
     });
   } catch (err) {
     console.warn("3D scene unavailable:", err);
@@ -94,6 +97,88 @@ function finishLoader() {
     setStep("engine", 1); setStep("city", 1);
   }
 })();
+
+/* ---------- Landmarks ---------- */
+// Data lives in #landmarks (EN) + i18n.js (ZH); order = rank (1 = tallest tower).
+const LANDMARKS = [...document.querySelectorAll("#landmarks [data-lm]")].map(el => ({
+  key: el.dataset.lm, icon: el.dataset.icon, href: el.dataset.href,
+}));
+const card = $("#lm-card");
+const isTouch = matchMedia("(hover: none)").matches;
+const found = new Set((() => { try { return JSON.parse(sessionStorage.getItem("lm-found") || "[]"); } catch { return []; } })());
+let shownRank = -1, hideTimer = null, pinned = false, finaleShown = found.size >= LANDMARKS.length;
+$("#lm-total").textContent = LANDMARKS.length;
+$("#lm-count").textContent = found.size;
+
+function fillCard(rank) {
+  const lm = LANDMARKS[rank];
+  $("#lm-rank").textContent = `${rank + 1} / ${LANDMARKS.length}`;
+  $("#lm-title").dataset.i18n = `lm.${lm.key}.t`;
+  $("#lm-desc").dataset.i18n = `lm.${lm.key}.d`;
+  $("#lm-title").innerHTML = t(`lm.${lm.key}.t`);
+  $("#lm-desc").innerHTML = t(`lm.${lm.key}.d`);
+  $("#lm-link").setAttribute("href", lm.href);
+  $("#lm-icon").innerHTML = window.feather?.icons[lm.icon]?.toSvg({ "stroke-width": 1.75 }) ?? "";
+}
+
+function markFound(rank) {
+  const key = LANDMARKS[rank].key;
+  if (found.has(key)) return;
+  found.add(key);
+  try { sessionStorage.setItem("lm-found", JSON.stringify([...found])); } catch {}
+  $("#lm-count").textContent = found.size;
+  $("#lm-progress").classList.add("bump");
+  setTimeout(() => $("#lm-progress").classList.remove("bump"), 500);
+  if (found.size === LANDMARKS.length && !finaleShown) {
+    finaleShown = true;
+    setTimeout(() => {
+      scene?.celebrate(18);
+      $("#lm-finale").hidden = false;
+      requestAnimationFrame(() => $("#lm-finale").classList.add("show"));
+    }, 900);
+  }
+}
+
+// Called every frame by the scene: rank of hovered landmark + roof position, or -1
+function showLandmark(rank, x, y) {
+  if (rank < 0) {
+    if (shownRank >= 0 && !pinned && !hideTimer) hideTimer = setTimeout(hideCard, 450);
+    return;
+  }
+  clearTimeout(hideTimer); hideTimer = null;
+  if (rank !== shownRank) {
+    shownRank = rank;
+    fillCard(rank);
+    card.hidden = false;
+    requestAnimationFrame(() => card.classList.add("show"));
+    markFound(rank);
+  }
+  if (!isTouch && innerWidth > 860) {
+    const w = card.offsetWidth, h = card.offsetHeight;
+    const left = Math.min(innerWidth - w - 16, Math.max(16, x + 22));
+    const top = Math.min(innerHeight - h - 16, Math.max(72, y - h / 2));
+    card.style.transform = `translate(${left}px, ${top}px)`;
+  }
+}
+function hideCard() {
+  hideTimer = null; pinned = false; shownRank = -1;
+  card.classList.remove("show");
+  setTimeout(() => { if (shownRank < 0) card.hidden = true; }, 250);
+}
+function clickLandmark(rank, pointerType) {
+  if (pointerType === "mouse") {
+    document.querySelector(LANDMARKS[rank].href)?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+  } else {
+    pinned = true; // touch: keep the card open until closed or scrolled away
+  }
+}
+card.addEventListener("pointerenter", () => { clearTimeout(hideTimer); hideTimer = null; pinned = true; });
+card.addEventListener("pointerleave", () => { if (!isTouch) { pinned = false; hideTimer = setTimeout(hideCard, 450); } });
+$("#lm-close").addEventListener("click", hideCard);
+$("#lm-link").addEventListener("click", hideCard);
+$("#lm-finale-close").addEventListener("click", () => $("#lm-finale").classList.remove("show"));
+$("#lm-finale-cta").addEventListener("click", () => $("#lm-finale").classList.remove("show"));
+addEventListener("scroll", () => { if (scrollY > innerHeight * 0.5 && shownRank >= 0) hideCard(); }, { passive: true });
 
 /* ---------- Navigation ---------- */
 $("#menu-btn").addEventListener("click", () => document.body.classList.toggle("menu-open"));

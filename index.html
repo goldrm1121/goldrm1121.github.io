@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/style.css?v=20261013112140">
+  <link rel="stylesheet" href="assets/style.css?v=20261013202304">
   <script type="importmap">
     { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
   </script>
@@ -30,6 +30,36 @@
   </div>
 
   <canvas id="scene" aria-hidden="true"></canvas>
+
+  <!-- Landmark towers: rank 1 = tallest. EN text here, ZH in assets/i18n.js -->
+  <div id="landmarks" hidden>
+    <div data-lm="edu" data-icon="book-open" data-href="#about"><span data-i18n="lm.edu.t">Education</span><span data-i18n="lm.edu.d">Public Finance × Computer Science double major with a Finance minor at NCCU, now on exchange at NUS Business School.</span></div>
+    <div data-lm="builder" data-icon="mic" data-href="#experience"><span data-i18n="lm.builder.t">Builder from Zero</span><span data-i18n="lm.builder.d">Founded Taiwan's first campus stand-up comedy show — a full house of about 60 on the first night.</span></div>
+    <div data-lm="re" data-icon="bar-chart-2" data-href="#projects"><span data-i18n="lm.re.t">Real Estate Analyst</span><span data-i18n="lm.re.d">Building a 5-year hold investment model for Galaxis @ Fusionopolis in Singapore.</span></div>
+    <div data-lm="proptech" data-icon="link" data-href="#awards"><span data-i18n="lm.proptech.t">PropTech Innovator</span><span data-i18n="lm.proptech.d">2nd place at the CTBC Business Innovation Competition with a fractional REIT platform.</span></div>
+    <div data-lm="green" data-icon="refresh-cw" data-href="#projects"><span data-i18n="lm.green.t">Sustainability</span><span data-i18n="lm.green.d">Recup Run, reusable cups for marathons — Honorable Mention at NCCU Innovation Star.</span></div>
+    <div data-lm="global" data-icon="globe" data-href="#skills"><span data-i18n="lm.global.t">Global Mindset</span><span data-i18n="lm.global.d">TOEIC 900, English and Mandarin, and a love of cross-cultural exchange.</span></div>
+    <div data-lm="tax" data-icon="percent" data-href="#skills"><span data-i18n="lm.tax.t">Tax Curious</span><span data-i18n="lm.tax.d">Exploring international tax: Pillar Two, transfer pricing and CFC rules.</span></div>
+    <span data-i18n="lm.kicker">Landmark</span><span data-i18n="lm.more">Learn more</span>
+  </div>
+
+  <aside id="lm-card" class="lm-card" aria-live="polite" hidden>
+    <div class="lm-icon" id="lm-icon"></div>
+    <div class="lm-body">
+      <p class="lm-kicker"><span data-i18n="lm.kicker">Landmark</span> <span id="lm-rank"></span></p>
+      <h3 id="lm-title"></h3>
+      <p id="lm-desc"></p>
+      <a id="lm-link" href="#about"><span data-i18n="lm.more">Learn more</span><i data-feather="arrow-right"></i></a>
+    </div>
+    <button class="lm-close" id="lm-close" aria-label="Close"><i data-feather="x"></i></button>
+  </aside>
+
+  <aside id="lm-finale" class="lm-finale" hidden>
+    <i data-feather="award"></i>
+    <p data-i18n="lm.finale">You found every landmark — thanks for exploring the city. Let's talk.</p>
+    <a href="#contact" class="btn btn-accent" id="lm-finale-cta"><i data-feather="mail"></i><span data-i18n="lm.finale.cta">Get in touch</span></a>
+    <button class="lm-close" id="lm-finale-close" aria-label="Close"><i data-feather="x"></i></button>
+  </aside>
 
   <!-- Navigation -->
   <header class="nav">
@@ -69,7 +99,8 @@
         <a href="#about" class="btn btn-accent"><span data-i18n="hero.cta">Explore</span><i data-feather="arrow-down"></i></a>
         <a href="#contact" class="btn btn-ghost"><i data-feather="mail"></i><span data-i18n="hero.contact">Get in touch</span></a>
       </div>
-      <p class="hero-hint"><i data-feather="star"></i><span class="hint-hover" data-i18n="hero.hint">Hover over the skyline to launch fireworks</span><span class="hint-touch" data-i18n="hero.hint.touch">Tap the skyline to launch fireworks</span></p>
+      <p class="hero-hint"><i data-feather="star"></i><span class="hint-hover" data-i18n="hero.hint">Find the glowing landmarks — each one hides a story and fireworks</span><span class="hint-touch" data-i18n="hero.hint.touch">Tap the glowing landmarks — each one hides a story and fireworks</span></p>
+      <p class="lm-progress" id="lm-progress"><i data-feather="map"></i><span data-i18n="lm.found">Landmarks found</span> <b><span id="lm-count">0</span> / <span id="lm-total">7</span></b></p>
     </section>
 
     <!-- About -->
@@ -204,6 +235,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js"></script>
-  <script type="module" src="assets/main.js?v=20261013112140"></script>
+  <script type="module" src="assets/main.js?v=20261013202304"></script>
 </body>
 </html>
