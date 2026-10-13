@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hollis Li</title>
+  <meta name="description" content="Hollis Li — Public Finance & Computer Science, NCCU. Real estate finance, international tax, entrepreneurship.">
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body class="is-loading">
+
+  <!-- Loader -->
+  <div id="loader" role="status" aria-live="polite">
+    <div class="loader-inner">
+      <div class="loader-mark">HL</div>
+      <div class="loader-count"><span id="loader-pct">0</span><small>%</small></div>
+      <div class="loader-bar"><span id="loader-fill"></span></div>
+      <div class="loader-step" id="loader-step" data-i18n="loader.start">Initialising</div>
+      <button id="enter" class="btn btn-accent" hidden>
+        <span data-i18n="loader.enter">Enter</span><i data-feather="arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <canvas id="scene" aria-hidden="true"></canvas>
+
+  <!-- Navigation -->
+  <header class="nav">
+    <a href="#top" class="brand">Hollis Li</a>
+    <nav class="nav-links" id="nav-links">
+      <a href="#about" data-i18n="nav.about">About</a>
+      <a href="#experience" data-i18n="nav.experience">Experience</a>
+      <a href="#projects" data-i18n="nav.projects">Projects</a>
+      <a href="#awards" data-i18n="nav.awards">Awards</a>
+      <a href="#skills" data-i18n="nav.skills">Skills</a>
+      <a href="#contact" data-i18n="nav.contact">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button data-set-lang="en" aria-pressed="true">EN</button>
+        <button data-set-lang="zh" aria-pressed="false">中文</button>
+      </div>
+      <button class="icon-btn menu-btn" id="menu-btn" aria-label="Menu"><i data-feather="menu"></i></button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero">
+      <p class="eyebrow"><i data-feather="map-pin"></i><span data-i18n="hero.location">Taipei · Singapore</span></p>
+      <h1>
+        <span class="hero-hi" data-i18n="hero.hi">Hi, I'm</span>
+        <span class="hero-name" data-i18n="hero.name">Hollis Li</span>
+      </h1>
+      <p class="hero-lead" data-i18n="hero.lead">Public Finance &amp; Computer Science student building at the intersection of real estate, finance and technology.</p>
+      <div class="hero-tags">
+        <span><i data-feather="home"></i><span data-i18n="tag.re">Real Estate Finance</span></span>
+        <span><i data-feather="globe"></i><span data-i18n="tag.tax">International Tax</span></span>
+        <span><i data-feather="zap"></i><span data-i18n="tag.startup">Entrepreneurship</span></span>
+      </div>
+      <div class="hero-cta">
+        <a href="#about" class="btn btn-accent"><span data-i18n="hero.cta">Explore</span><i data-feather="arrow-down"></i></a>
+        <a href="#contact" class="btn btn-ghost"><i data-feather="mail"></i><span data-i18n="hero.contact">Get in touch</span></a>
+      </div>
+      <p class="hero-hint"><i data-feather="mouse-pointer"></i><span data-i18n="hero.hint">Move your cursor over the skyline</span></p>
+    </section>
+
+    <!-- About -->
+    <section id="about" class="panel reveal">
+      <h2 class="section-title"><i data-feather="user"></i><span data-i18n="nav.about">About</span></h2>
+      <div class="grid-2">
+        <p class="lead" data-i18n="about.body">I study Public Finance and Computer Science at National Chengchi University, with a minor in Finance, and I'm spending Fall 2026 on exchange at NUS Business School. I like starting things from zero — a comedy stage, a fintech concept, a circular-economy venture — and I'm drawn to the places where finance meets real assets and public policy.</p>
+        <div class="stats">
+          <div class="stat"><span class="stat-num">2</span><span class="stat-label" data-i18n="stat.majors">majors: Public Finance + CS</span></div>
+          <div class="stat"><span class="stat-num">900</span><span class="stat-label" data-i18n="stat.toeic">TOEIC score</span></div>
+          <div class="stat"><span class="stat-num">2</span><span class="stat-label" data-i18n="stat.awards">competition awards</span></div>
+          <div class="stat"><span class="stat-num">~60</span><span class="stat-label" data-i18n="stat.audience">full-house audience at our first show</span></div>
+        </div>
+      </div>
+
+      <h3 class="sub-title"><i data-feather="book-open"></i><span data-i18n="edu.title">Education</span></h3>
+      <div class="timeline">
+        <article class="t-item">
+          <div class="t-meta" data-i18n="edu.nus.date">Aug – Dec 2026</div>
+          <div class="t-body">
+            <h4 data-i18n="edu.nus.org">National University of Singapore — NUS Business School</h4>
+            <p class="t-role" data-i18n="edu.nus.role">Exchange Student</p>
+            <p data-i18n="edu.nus.desc">Real Estate Investment Analysis · Investment Instruments and Risk Management · Organisational Behaviour</p>
+          </div>
+        </article>
+        <article class="t-item">
+          <div class="t-meta" data-i18n="edu.nccu.date">2024 – 2028 (expected)</div>
+          <div class="t-body">
+            <h4 data-i18n="edu.nccu.org">National Chengchi University</h4>
+            <p class="t-role" data-i18n="edu.nccu.role">B.A., Public Finance &amp; Computer Science (double major); Minor in Finance</p>
+            <p data-i18n="edu.nccu.desc">English Taught Program · Real Estate Finance and Management Program · Innovation and Entrepreneurship Program</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Experience -->
+    <section id="experience" class="panel reveal">
+      <h2 class="section-title"><i data-feather="briefcase"></i><span data-i18n="nav.experience">Experience</span></h2>
+      <div class="cards">
+        <article class="card">
+          <div class="card-icon"><i data-feather="mic"></i></div>
+          <h3 data-i18n="exp.talk.title">Campus Talk Show</h3>
+          <p class="card-role" data-i18n="exp.talk.role">Founder &amp; Organizer</p>
+          <ul>
+            <li data-i18n="exp.talk.b1">Founded Taiwan's first campus stand-up comedy show; the first night filled the room with about 60 students.</li>
+            <li data-i18n="exp.talk.b2">Secured a free venue and drinks sponsorship from a campus restaurant in exchange for foot traffic.</li>
+            <li data-i18n="exp.talk.b3">Ran Instagram marketing with zero budget.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <div class="card-icon"><i data-feather="trending-up"></i></div>
+          <h3 data-i18n="exp.fubon.title">Fubon Enterprise Leadership Internship</h3>
+          <p class="card-role" data-i18n="exp.fubon.role">Program Participant · Jan 2026</p>
+          <ul>
+            <li data-i18n="exp.fubon.b1">One-month leadership internship program in Taiwan.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- Projects -->
+    <section id="projects" class="panel reveal">
+      <h2 class="section-title"><i data-feather="layers"></i><span data-i18n="nav.projects">Projects</span></h2>
+      <div class="cards">
+        <article class="card card-wide">
+          <div class="card-icon"><i data-feather="bar-chart-2"></i></div>
+          <h3 data-i18n="proj.re.title">Galaxis @ Fusionopolis — Investment Analysis</h3>
+          <p class="card-role" data-i18n="proj.re.role">RE3701, NUS · Team of five · 2026</p>
+          <p data-i18n="proj.re.desc">A 5-year hold analysis of a 60,935 sqm business-park and retail asset in Singapore's one-north precinct: market and tenant analysis, base-case pro forma, financing and amortising-loan comparison, capital-structure and tax scenarios, and sensitivity analysis.</p>
+          <div class="chips"><span>Excel</span><span>Pro forma</span><span data-i18n="chip.sens">Sensitivity</span></div>
+        </article>
+        <article class="card">
+          <div class="card-icon"><i data-feather="refresh-cw"></i></div>
+          <h3>Recup Run</h3>
+          <p class="card-role" data-i18n="proj.recup.role">Reusable cups for marathons · 2025</p>
+          <p data-i18n="proj.recup.desc">A rental service replacing the 4M+ disposable cups used each year across Taiwan's 784 marathons — with logistics, GRI-aligned sustainability reports and subsidy matching for organisers. I designed and coded the website.</p>
+          <div class="chips"><span>ESG</span><span>HTML</span><span data-i18n="chip.bp">Business plan</span></div>
+        </article>
+        <article class="card">
+          <div class="card-icon"><i data-feather="link"></i></div>
+          <h3 data-i18n="proj.reit.title">Fractional REIT Platform</h3>
+          <p class="card-role" data-i18n="proj.reit.role">CTBC Business Innovation Competition</p>
+          <p data-i18n="proj.reit.desc">A blockchain-based product that packages mortgages and credit loans into tradable fractional assets, opening REIT-style investing to everyday investors.</p>
+          <div class="chips"><span>PropTech</span><span>FinTech</span><span>Blockchain</span></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Awards -->
+    <section id="awards" class="panel reveal">
+      <h2 class="section-title"><i data-feather="award"></i><span data-i18n="nav.awards">Awards</span></h2>
+      <ul class="award-list">
+        <li><span class="award-rank" data-i18n="award.ctbc.rank">2nd Place</span><span data-i18n="award.ctbc.name">CTBC Business Innovation Competition</span></li>
+        <li><span class="award-rank" data-i18n="award.star.rank">Honorable Mention</span><span data-i18n="award.star.name">NCCU Innovation Star Startup Competition 2025 — Team Recup Run</span></li>
+      </ul>
+    </section>
+
+    <!-- Skills -->
+    <section id="skills" class="panel reveal">
+      <h2 class="section-title"><i data-feather="tool"></i><span data-i18n="nav.skills">Skills</span></h2>
+      <div class="skill-grid">
+        <div class="skill-block">
+          <h4><i data-feather="message-circle"></i><span data-i18n="skill.lang">Languages</span></h4>
+          <p data-i18n="skill.lang.v">English (TOEIC 900) · Mandarin (native)</p>
+        </div>
+        <div class="skill-block">
+          <h4><i data-feather="code"></i><span data-i18n="skill.tech">Technical</span></h4>
+          <p>Excel financial modeling · C · Python · HTML · LaTeX</p>
+        </div>
+        <div class="skill-block">
+          <h4><i data-feather="compass"></i><span data-i18n="skill.int">Interests</span></h4>
+          <p data-i18n="skill.int.v">International taxation (CFC, GILTI, BEPS, Pillar Two, transfer pricing) · Real estate finance · Entrepreneurship</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="panel reveal contact">
+      <h2 class="section-title"><i data-feather="send"></i><span data-i18n="nav.contact">Contact</span></h2>
+      <p class="lead" data-i18n="contact.body">Open to internships in real estate finance, tax and consulting in Singapore and Taiwan.</p>
+      <div class="hero-cta">
+        <a class="btn btn-accent" href="mailto:goldrm101@gmail.com"><i data-feather="mail"></i><span>goldrm101@gmail.com</span></a>
+        <a class="btn btn-ghost" href="https://github.com/goldrm1121" target="_blank" rel="noopener"><i data-feather="github"></i><span>GitHub</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>&copy; <span id="year"></span> Hollis Li</span>
+    <a href="#top" class="icon-btn" aria-label="Back to top"><i data-feather="arrow-up"></i></a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js"></script>
+  <script type="module" src="assets/main.js"></script>
+</body>
+</html>
