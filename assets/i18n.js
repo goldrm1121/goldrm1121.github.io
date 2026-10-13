@@ -43,6 +43,7 @@ export const zh = {
   "lm.global.d": "多益 900、中英雙語，熱愛跨文化交流。",
   "lm.tax.t": "國際租稅",
   "lm.tax.d": "鑽研國際租稅：全球最低稅負制、移轉訂價與 CFC 規則。",
+  "lm.finale.t": "全城探索完成",
   "lm.finale": "你找到了所有地標，謝謝你走完這座城市。聊聊吧！",
   "lm.finale.cta": "聯絡我",
 

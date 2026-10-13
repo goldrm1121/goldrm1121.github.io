@@ -225,10 +225,12 @@ body.no-webgl .lm-progress { display: none; }
   opacity: 0; transition: opacity .25s var(--ease); will-change: transform;
 }
 .lm-card.show { opacity: 1; }
-.lm-icon { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgba(222, 254, 71, .12); color: var(--accent); }
+.lm-card { --lm: var(--accent); }
+.lm-icon { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: var(--lm);
+  background: color-mix(in srgb, var(--lm) 14%, transparent); }
 .lm-icon svg { width: 20px; height: 20px; }
 .lm-body { min-width: 0; }
-.lm-kicker { margin: 0 0 2px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.lm-kicker { margin: 0 0 2px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--lm); }
 .lm-card h3 { margin: 0 0 6px; font-family: var(--serif); font-weight: 500; font-size: 20px; line-height: 1.25; }
 .lm-card p#lm-desc { margin: 0 0 10px; font-size: 14px; color: #c9d3da; line-height: 1.55; }
 #lm-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--accent); }
@@ -240,20 +242,47 @@ body.no-webgl .lm-progress { display: none; }
 }
 .lm-close:hover { color: var(--text); }
 
+/* Award dialog (centered, one-time) */
 .lm-finale {
-  position: fixed; left: 50%; bottom: 28px; z-index: 40; transform: translate(-50%, 20px);
-  display: flex; align-items: center; gap: 14px; padding: 14px 16px 14px 20px; max-width: calc(100vw - 32px);
-  border-radius: 999px; border: 1px solid rgba(222, 254, 71, .4); background: rgba(4, 28, 44, .94);
-  backdrop-filter: blur(14px); opacity: 0; transition: opacity .4s var(--ease), transform .4s var(--ease);
+  position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px;
+  background: rgba(2, 14, 22, .45); opacity: 0; transition: opacity .45s var(--ease);
 }
-.lm-finale.show { opacity: 1; transform: translate(-50%, 0); }
-.lm-finale > svg { color: var(--accent); width: 22px; height: 22px; }
-.lm-finale p { margin: 0; font-size: 14px; }
-.lm-finale .btn { padding: 9px 16px; white-space: nowrap; }
-.lm-finale .lm-close { position: static; display: grid; }
+.lm-finale.show { opacity: 1; }
+.lm-finale-card {
+  position: relative; width: min(440px, 100%); padding: 36px 28px 30px; text-align: center;
+  border-radius: 24px; border: 1px solid rgba(222, 254, 71, .4);
+  background: radial-gradient(120% 80% at 50% 0%, rgba(222, 254, 71, .10), transparent 60%), rgba(4, 28, 44, .94);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .8);
+  transform: translateY(16px) scale(.96); transition: transform .5s var(--ease);
+}
+.lm-finale.show .lm-finale-card { transform: none; }
+.lm-badges { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.lm-badge {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--lm);
+  background: color-mix(in srgb, var(--lm) 16%, transparent); border: 1px solid color-mix(in srgb, var(--lm) 45%, transparent);
+  opacity: 0; transform: scale(.6);
+}
+.lm-finale.show .lm-badge { animation: badgeIn .5s var(--ease) forwards; }
+.lm-finale.show .lm-badge:nth-child(1) { animation-delay: .15s; } .lm-finale.show .lm-badge:nth-child(2) { animation-delay: .23s; }
+.lm-finale.show .lm-badge:nth-child(3) { animation-delay: .31s; } .lm-finale.show .lm-badge:nth-child(4) { animation-delay: .39s; }
+.lm-finale.show .lm-badge:nth-child(5) { animation-delay: .47s; } .lm-finale.show .lm-badge:nth-child(6) { animation-delay: .55s; }
+.lm-finale.show .lm-badge:nth-child(7) { animation-delay: .63s; }
+.lm-badge svg { width: 18px; height: 18px; }
+@keyframes badgeIn { to { opacity: 1; transform: none; } }
+.lm-finale-card h3 { margin: 0 0 8px; font-family: var(--serif); font-weight: 500; font-size: 28px; }
+.lm-finale-card p { margin: 0 auto 24px; max-width: 30ch; color: #c9d3da; font-size: 15px; line-height: 1.6; }
+.lm-finale .lm-close { display: grid; position: absolute; top: 12px; right: 12px; }
+@media (prefers-reduced-motion: reduce) { .lm-badge { opacity: 1; transform: none; } .lm-finale-card { transform: none; } }
 
 @media (max-width: 860px), (hover: none) {
   .lm-card { left: 16px; right: 16px; top: auto; bottom: 16px; width: auto; transform: none !important; }
   .lm-card .lm-close { display: grid; }
-  .lm-finale { border-radius: 18px; flex-wrap: wrap; justify-content: center; text-align: center; bottom: 16px; }
+
+  /* City sits in the top band; hero text starts below it */
+  .hero { justify-content: flex-start; padding-top: calc(38vh + 24px); min-height: auto; padding-bottom: 48px; }
+  .hero-name { font-size: clamp(44px, 12vw, 64px); }
+  .hero-lead { font-size: 16px; margin: 14px 0 18px; }
 }
+@media (hover: none) { body { touch-action: pan-y; } }
+@media (max-width: 480px) { .lm-badges { gap: 6px; flex-wrap: nowrap; } .lm-badge { width: 34px; height: 34px; } .lm-badge svg { width: 16px; height: 16px; } .lm-finale-card { padding: 32px 20px 26px; } .lm-finale-card h3 { font-size: 24px; } }

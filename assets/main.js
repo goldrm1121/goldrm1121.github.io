@@ -1,4 +1,4 @@
-import { zh } from "./i18n.js?v=20261013202304";
+import { zh } from "./i18n.js?v=20261013204909";
 
 const $ = s => document.querySelector(s);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -69,6 +69,7 @@ function finishLoader() {
   enter.addEventListener("click", go, { once: true });
   const q = new URLSearchParams(location.search);
   if (q.get("lang")) applyLang(q.get("lang"));
+  if (q.has("debug")) window.__scene = scene;
   if (q.has("enter")) go(); // dev/preview: skip the Enter click
 }
 
@@ -82,7 +83,7 @@ function finishLoader() {
 
   setStep("engine", 0.1, "loader.engine");
   try {
-    const { createScene } = await import("./scene.js?v=20261013202304");
+    const { createScene, LANDMARK_COLORS } = await import("./scene.js?v=20261013204909");
     setStep("engine", 1, "loader.city");
     scene = await createScene($("#scene"), {
       reducedMotion,
@@ -91,6 +92,7 @@ function finishLoader() {
       onLandmark: showLandmark,
       onLandmarkClick: clickLandmark,
     });
+    lmColors = LANDMARK_COLORS.map(([c]) => "#" + c.toString(16).padStart(6, "0"));
   } catch (err) {
     console.warn("3D scene unavailable:", err);
     document.body.classList.add("no-webgl");
@@ -106,6 +108,7 @@ const LANDMARKS = [...document.querySelectorAll("#landmarks [data-lm]")].map(el 
 const card = $("#lm-card");
 const isTouch = matchMedia("(hover: none)").matches;
 const found = new Set((() => { try { return JSON.parse(sessionStorage.getItem("lm-found") || "[]"); } catch { return []; } })());
+let lmColors = [];
 let shownRank = -1, hideTimer = null, pinned = false, finaleShown = found.size >= LANDMARKS.length;
 $("#lm-total").textContent = LANDMARKS.length;
 $("#lm-count").textContent = found.size;
@@ -119,6 +122,7 @@ function fillCard(rank) {
   $("#lm-desc").innerHTML = t(`lm.${lm.key}.d`);
   $("#lm-link").setAttribute("href", lm.href);
   $("#lm-icon").innerHTML = window.feather?.icons[lm.icon]?.toSvg({ "stroke-width": 1.75 }) ?? "";
+  if (lmColors[rank]) card.style.setProperty("--lm", lmColors[rank]);
 }
 
 function markFound(rank) {
@@ -132,9 +136,9 @@ function markFound(rank) {
   if (found.size === LANDMARKS.length && !finaleShown) {
     finaleShown = true;
     setTimeout(() => {
-      scene?.celebrate(18);
-      $("#lm-finale").hidden = false;
-      requestAnimationFrame(() => $("#lm-finale").classList.add("show"));
+      hideCard();
+      scene?.celebrate(21);
+      openFinale();
     }, 900);
   }
 }
@@ -176,8 +180,24 @@ card.addEventListener("pointerenter", () => { clearTimeout(hideTimer); hideTimer
 card.addEventListener("pointerleave", () => { if (!isTouch) { pinned = false; hideTimer = setTimeout(hideCard, 450); } });
 $("#lm-close").addEventListener("click", hideCard);
 $("#lm-link").addEventListener("click", hideCard);
-$("#lm-finale-close").addEventListener("click", () => $("#lm-finale").classList.remove("show"));
-$("#lm-finale-cta").addEventListener("click", () => $("#lm-finale").classList.remove("show"));
+// Award dialog: one badge per landmark in its own colour
+function openFinale() {
+  $("#lm-badges").innerHTML = LANDMARKS.map((lm, r) =>
+    `<span class="lm-badge" style="--lm:${lmColors[r] ?? "var(--accent)"}">${window.feather?.icons[lm.icon]?.toSvg({ "stroke-width": 1.75 }) ?? ""}</span>`
+  ).join("");
+  const f = $("#lm-finale");
+  f.hidden = false;
+  requestAnimationFrame(() => f.classList.add("show"));
+}
+function closeFinale() {
+  const f = $("#lm-finale");
+  f.classList.remove("show");
+  setTimeout(() => { f.hidden = true; }, 400);
+}
+$("#lm-finale-close").addEventListener("click", closeFinale);
+$("#lm-finale-cta").addEventListener("click", closeFinale);
+$("#lm-finale").addEventListener("click", e => { if (e.target.id === "lm-finale") closeFinale(); });
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("#lm-finale").hidden) closeFinale(); });
 addEventListener("scroll", () => { if (scrollY > innerHeight * 0.5 && shownRank >= 0) hideCard(); }, { passive: true });
 
 /* ---------- Navigation ---------- */

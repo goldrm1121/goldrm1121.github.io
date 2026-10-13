@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/style.css?v=20261013202304">
+  <link rel="stylesheet" href="assets/style.css?v=20261013204909">
   <script type="importmap">
     { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
   </script>
@@ -54,12 +54,15 @@
     <button class="lm-close" id="lm-close" aria-label="Close"><i data-feather="x"></i></button>
   </aside>
 
-  <aside id="lm-finale" class="lm-finale" hidden>
-    <i data-feather="award"></i>
-    <p data-i18n="lm.finale">You found every landmark — thanks for exploring the city. Let's talk.</p>
-    <a href="#contact" class="btn btn-accent" id="lm-finale-cta"><i data-feather="mail"></i><span data-i18n="lm.finale.cta">Get in touch</span></a>
-    <button class="lm-close" id="lm-finale-close" aria-label="Close"><i data-feather="x"></i></button>
-  </aside>
+  <div id="lm-finale" class="lm-finale" role="dialog" aria-modal="true" aria-labelledby="lm-finale-title" hidden>
+    <div class="lm-finale-card">
+      <button class="lm-close" id="lm-finale-close" aria-label="Close"><i data-feather="x"></i></button>
+      <div class="lm-badges" id="lm-badges"></div>
+      <h3 id="lm-finale-title" data-i18n="lm.finale.t">City Explored</h3>
+      <p data-i18n="lm.finale">You found every landmark — thanks for exploring the city. Let's talk.</p>
+      <a href="#contact" class="btn btn-accent" id="lm-finale-cta"><i data-feather="mail"></i><span data-i18n="lm.finale.cta">Get in touch</span></a>
+    </div>
+  </div>
 
   <!-- Navigation -->
   <header class="nav">
@@ -235,6 +238,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js"></script>
-  <script type="module" src="assets/main.js?v=20261013202304"></script>
+  <script type="module" src="assets/main.js?v=20261013204909"></script>
 </body>
 </html>

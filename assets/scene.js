@@ -5,6 +5,16 @@
 import * as THREE from "three";
 
 const NAVY = 0x041c2c, TOWER = 0x0d3a57, TOP = 0x1d6a8f, ACCENT = 0xdefe47;
+// One colour family per landmark (rank order) — beacon, firework and card icon share it
+export const LANDMARK_COLORS = [
+  [0xffd166, 0xfff3c4],  // 1 gold
+  [0xff6b6b, 0xffc2b8],  // 2 coral
+  [0xdefe47, 0xffffff],  // 3 lime
+  [0x4cc9f0, 0xbff0ff],  // 4 cyan
+  [0x52d681, 0xc4f5d3],  // 5 green
+  [0xb388ff, 0xe6d9ff],  // 6 violet
+  [0xff9f1c, 0xffd8a8],  // 7 orange
+];
 
 export async function createScene(canvas, {
   onProgress = () => {}, reducedMotion = false,
@@ -85,7 +95,7 @@ export async function createScene(canvas, {
   const chunk = 60;
   const baseColors = state.map(s => {
     const c = base.clone().lerp(tall, Math.min(1, s.h / 14));
-    return s.rank >= 0 ? c.lerp(accent, 0.22) : c;   // landmarks carry a hint of the accent
+    return s.rank >= 0 ? c.lerp(new THREE.Color(LANDMARK_COLORS[s.rank % LANDMARK_COLORS.length][0]), 0.25) : c; // tinted in its colour
   });
   for (let i = 0; i < state.length; i++) {
     mesh.setColorAt(i, baseColors[i]);
@@ -135,8 +145,7 @@ export async function createScene(canvas, {
     return i;
   }
   const tmpC = new THREE.Color();
-  function launch(x, roof, z) {
-    const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)];
+  function launch(x, roof, z, pal = PALETTES[Math.floor(Math.random() * PALETTES.length)]) {
     const i = spawn(x, roof, z, (Math.random() - .5) * .6, 9 + Math.random() * 3, (Math.random() - .5) * .6,
       tmpC.set(0xffffff), 1.2, true);
     pending.push({ i, at: 0.55 + Math.random() * 0.25, age: 0, pal });
@@ -180,10 +189,13 @@ export async function createScene(canvas, {
 
   // Beacons: one pulsing point above each landmark roof
   const bcPos = new Float32Array(lmIdx.length * 3);
+  const bcCol = new Float32Array(lmIdx.length * 3);
+  lmIdx.forEach((_, r) => new THREE.Color(LANDMARK_COLORS[r % LANDMARK_COLORS.length][0]).toArray(bcCol, r * 3));
   const bcGeo = new THREE.BufferGeometry();
   bcGeo.setAttribute("position", new THREE.BufferAttribute(bcPos, 3).setUsage(THREE.DynamicDrawUsage));
+  bcGeo.setAttribute("color", new THREE.BufferAttribute(bcCol, 3));
   const bcMat = new THREE.PointsMaterial({
-    size: 1.6, map: sprite, color: ACCENT, transparent: true,
+    size: 1.6, map: sprite, vertexColors: true, transparent: true,
     depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
   });
   const beacons = new THREE.Points(bcGeo, bcMat);
@@ -209,13 +221,31 @@ export async function createScene(canvas, {
     clickType = e.pointerType;
   });
   window.addEventListener("scroll", () => { scrollY = window.scrollY; }, { passive: true });
+  // Touch: horizontal swipe spins the city (CSS touch-action: pan-y keeps vertical scrolling)
+  let dragX = null;
+  window.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse") dragX = e.clientX; });
+  window.addEventListener("pointermove", e => {
+    if (dragX === null || e.pointerType === "mouse") return;
+    userOrbit += (e.clientX - dragX) / innerWidth * Math.PI;   // full-width swipe = half a turn
+    dragX = e.clientX;
+  });
+  ["pointerup", "pointercancel"].forEach(t => window.addEventListener(t, () => { dragX = null; }));
 
+  // Pull the camera back on narrow screens so the whole city (and every beacon) fits.
+  // FIT_R ≈ city radius incl. margin; the horizontal half-FOV decides the distance needed.
+  const FIT_R = 19;
+  let fit = 1, userOrbit = 0;
   function resize() {
     const w = innerWidth, h = innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
+    const halfH = Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect);
+    fit = w > 900 ? 1.24 : THREE.MathUtils.clamp(FIT_R / Math.sin(halfH) / camBase.length(), 1, 2.4);
+    scene.fog.near = 28 * fit; scene.fog.far = 70 * fit;   // keep fog relative to camera distance
     // On wide screens shift the city right so the hero text has room on the left
-    if (w > 900) camera.setViewOffset(w, h, -w * 0.2, 0, w, h); else camera.clearViewOffset();
+    // Desktop: city to the right of the hero text. Narrow: city in the top band, text below.
+    if (w > 900) camera.setViewOffset(w, h, -w * 0.2, 0, w, h);
+    else camera.setViewOffset(w, h, 0, h * (w / h < 0.6 ? 0.16 : 0.04), w, h);
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
@@ -235,11 +265,27 @@ export async function createScene(canvas, {
     const lmHit = hits.find(h => state[h.instanceId].rank >= 0);
     hovered = lmHit ? lmHit.instanceId : hits.length ? hits[0].instanceId : -1;
 
+    // Touch: towers are small on phones, so a tap snaps to the nearest landmark within ~44px
+    // (measured to its roof and its mid-height in screen space)
+    if (clickShot && clickType !== "mouse" && !(hovered !== -1 && state[hovered].rank >= 0)) {
+      const px = (pointer.x + 1) / 2 * innerWidth, py = (1 - pointer.y) / 2 * innerHeight;
+      let best = -1, bestD = 44;
+      for (const i of lmIdx) {
+        const st = state[i];
+        for (const y of [st.h + 0.7, st.h * 0.6]) {
+          roof.set(st.px, y, st.pz).project(camera);
+          const d = Math.hypot((roof.x + 1) / 2 * innerWidth - px, (1 - roof.y) / 2 * innerHeight - py);
+          if (d < bestD) { bestD = d; best = i; }
+        }
+      }
+      if (best !== -1) hovered = best;
+    }
+
     // Only landmark towers launch fireworks — they are the reward for finding one
     if (hovered !== -1 && state[hovered].rank >= 0 && (hovered !== prevHovered || clickShot)) {
       const s = state[hovered];
       if ((clickShot || time - (lastShot.get(hovered) ?? -9) > 1.2) && pending.length < 14) {
-        launch(s.px, s.h + 1.2, s.pz);
+        launch(s.px, s.h + 1.2, s.pz, LANDMARK_COLORS[s.rank % LANDMARK_COLORS.length]);
         lastShot.set(hovered, time);
       }
     }
@@ -261,7 +307,7 @@ export async function createScene(canvas, {
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
       if (s.glow > 0.01 || target) {
-        col.copy(baseColors[i]).lerp(accent, s.glow);
+        col.copy(baseColors[i]).lerp(s.rank >= 0 ? new THREE.Color(LANDMARK_COLORS[s.rank % LANDMARK_COLORS.length][0]) : accent, s.glow);
         mesh.setColorAt(i, col);
       }
     }
@@ -277,11 +323,11 @@ export async function createScene(canvas, {
     bcMat.size = 1.6 * (reducedMotion ? 1 : 0.8 + 0.35 * Math.sin(time * 3));
 
     // Camera: slow orbit + cursor parallax + descend while scrolling
-    const orbit = reducedMotion ? 0 : time * 0.04;
-    const r = Math.hypot(camBase.x, camBase.z);
+    const orbit = (reducedMotion ? 0 : time * 0.04) + userOrbit;
+    const r = Math.hypot(camBase.x, camBase.z) * fit;
     const a = Math.atan2(camBase.z, camBase.x) + orbit + parallax.x * 0.12;
     const sy = Math.min(scrollY / innerHeight, 3);
-    camera.position.set(Math.cos(a) * r, camBase.y + parallax.y * 2 - sy * 4, Math.sin(a) * r);
+    camera.position.set(Math.cos(a) * r, camBase.y * fit + parallax.y * 2 - sy * 4, Math.sin(a) * r);
     camera.lookAt(0, 3 + sy * 1.5, 0); // aim a little above ground so the tallest roof stays in frame
 
     renderer.render(scene, camera);
@@ -303,13 +349,30 @@ export async function createScene(canvas, {
     for (let k = 0; k < count; k++) {
       setTimeout(() => {
         const s = state[from[k % from.length]];
-        launch(s.px, s.h + 1.2, s.pz);
+        launch(s.px, s.h + 1.2, s.pz, s.rank >= 0 ? LANDMARK_COLORS[s.rank % LANDMARK_COLORS.length] : undefined);
       }, 1400 + k * 380);
     }
   }
 
+  // Debug (?debug): for N camera angles around the orbit, where is each landmark roof on screen?
+  function debugOrbit(samples = 72) {
+    const r = Math.hypot(camBase.x, camBase.z) * fit, a0 = Math.atan2(camBase.z, camBase.x);
+    const cam = camera.clone(), v = new THREE.Vector3(), out = [];
+    for (let k = 0; k < samples; k++) {
+      const a = a0 + (k / samples) * Math.PI * 2;
+      cam.position.set(Math.cos(a) * r, camBase.y * fit, Math.sin(a) * r);
+      cam.lookAt(0, 3, 0); cam.updateMatrixWorld();
+      out.push(lmIdx.map(i => {
+        const s = state[i];
+        v.set(s.px, s.h + 0.7, s.pz).project(cam);
+        return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
+      }));
+    }
+    return out;
+  }
+
   return {
-    celebrate,
+    celebrate, debugOrbit,
     start() { requestAnimationFrame(frame); if (!reducedMotion) celebrate(); },
     stop() { running = false; },
   };
