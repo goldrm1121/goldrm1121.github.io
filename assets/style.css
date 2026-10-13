@@ -204,3 +204,5 @@ html[data-lang="zh"] .t-role { font-style: normal; }
 html[data-lang="zh"] .hero-name { font-size: clamp(44px, 7vw, 92px); letter-spacing: .02em; }
 #projects .cards { grid-template-columns: repeat(2, 1fr); }
 @media (max-width: 860px) { #projects .cards { grid-template-columns: 1fr; } }
+.hint-touch { display: none; }
+@media (hover: none) { .hint-hover { display: none; } .hint-touch { display: inline; } }
